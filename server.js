@@ -22,7 +22,7 @@ app.post("/book", async (req, res) => {
     // send email notification
     await resend.emails.send({
       from: "Vijay Generator <onboarding@resend.dev>",
-      to: "YOUR_EMAIL_HERE@gmail.com",  // 👈 replace with your email
+      to: "teetram08@gmail.com",  // 👈 replace with your email
       subject: `New Booking - ${data.model}`,
       html: `
         <h2>New Generator Booking</h2>
@@ -47,3 +47,4 @@ app.post("/book", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+
