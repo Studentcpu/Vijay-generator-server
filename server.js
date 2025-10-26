@@ -7,27 +7,26 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Setup transporter using Gmail App Password from Render environment variables
+// Setup transporter using environment variables from Render
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER, // your Gmail address
-    pass: process.env.EMAIL_PASS  // 16-character Gmail App Password
+    user: process.env.EMAIL_USER,  // Gmail address
+    pass: process.env.EMAIL_PASS   // Gmail App Password (16 chars)
   }
 });
 
-// Optional: verify connection configuration
-transporter.verify(function(error, success) {
-  if (error) {
-    console.log('Email setup error:', error);
-  } else {
-    console.log('Email server is ready to send messages');
-  }
+// Optional: verify transporter on server start
+transporter.verify((error, success) => {
+  if (error) console.log('Email setup error:', error);
+  else console.log('Email server is ready to send messages');
 });
 
+// Booking endpoint
 app.post('/book', async (req, res) => {
   const b = req.body;
 
+  // Validate required fields
   if (!b.model || !b.date || !b.time || !b.name || !b.phone || !b.location) {
     return res.status(400).send('Please fill all required fields.');
   }
