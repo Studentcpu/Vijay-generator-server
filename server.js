@@ -6,80 +6,44 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ initialize resend with your API key (set in Render)
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ✅ API route for booking form
+app.get("/", (req, res) => {
+  res.send("✅ Vijay Generator Server is running...");
+});
+
 app.post("/book", async (req, res) => {
   try {
-    const booking = req.body;
-    console.log("New Booking Received:", booking);
+    const data = req.body;
+    if (!data.name || !data.model || !data.phone || !data.date) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
 
-    // Message for owner (you)
-    const ownerMessage = `
-New Generator Booking Received
-
-Model: ${booking.model}
-Date: ${booking.date}
-Time: ${booking.time}
-Name: ${booking.name}
-Phone: ${booking.phone}
-Email: ${booking.email}
-Location: ${booking.location}
-Quantity: ${booking.qty}
-Message: ${booking.message || "N/A"}
-
-— Vijay Generator Booking System
-    `;
-
-    // Send email to business owner
+    // send email notification
     await resend.emails.send({
       from: "Vijay Generator <onboarding@resend.dev>",
-      to: "your_email@gmail.com", // 🔹 change this to YOUR email
-      subject: "New Booking Received – Vijay Generator",
-      text: ownerMessage,
+      to: "YOUR_EMAIL_HERE@gmail.com",  // 👈 replace with your email
+      subject: `New Booking - ${data.model}`,
+      html: `
+        <h2>New Generator Booking</h2>
+        <p><b>Name:</b> ${data.name}</p>
+        <p><b>Phone:</b> ${data.phone}</p>
+        <p><b>Email:</b> ${data.email}</p>
+        <p><b>Model:</b> ${data.model}</p>
+        <p><b>Date:</b> ${data.date}</p>
+        <p><b>Time:</b> ${data.time}</p>
+        <p><b>Location:</b> ${data.location}</p>
+        <p><b>Quantity:</b> ${data.qty}</p>
+        <p><b>Message:</b> ${data.message}</p>
+      `,
     });
 
-    // Message for customer
-    const customerMessage = `
-Dear ${booking.name},
-
-Thank you for booking a generator with Vijay Generator!
-Here are your booking details:
-
-Model: ${booking.model}
-Date: ${booking.date}
-Time: ${booking.time}
-Location: ${booking.location}
-Quantity: ${booking.qty}
-
-Our team will contact you shortly for confirmation.
-
-Best regards,  
-Vijay Generator
-📞 Customer Support
-    `;
-
-    // Send confirmation email to the customer
-    await resend.emails.send({
-      from: "Vijay Generator <onboarding@resend.dev>",
-      to: booking.email,
-      subject: "Booking Confirmation – Vijay Generator",
-      text: customerMessage,
-    });
-
-    res.status(200).send("Booking confirmed and emails sent!");
+    res.json({ success: true });
   } catch (error) {
-    console.error("Error sending email:", error);
-    res.status(500).send("Failed to process booking.");
+    console.error("Booking error:", error);
+    res.status(500).json({ error: "Server error", details: error.message });
   }
 });
 
-// ✅ Basic route for testing
-app.get("/", (req, res) => {
-  res.send("✅ Vijay Generator Booking Server is running!");
-});
-
-// ✅ Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
