@@ -1,64 +1,85 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const nodemailer = require('nodemailer');
-const cors = require('cors');
+import express from "express";
+import cors from "cors";
+import { Resend } from "resend";
 
 const app = express();
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-// Setup transporter using environment variables from Render
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,  // Gmail address
-    pass: process.env.EMAIL_PASS   // Gmail App Password (16 chars)
-  }
-});
+// ✅ initialize resend with your API key (set in Render)
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Optional: verify transporter on server start
-transporter.verify((error, success) => {
-  if (error) console.log('Email setup error:', error);
-  else console.log('Email server is ready to send messages');
-});
-
-// Booking endpoint
-app.post('/book', async (req, res) => {
-  const b = req.body;
-
-  // Validate required fields
-  if (!b.model || !b.date || !b.time || !b.name || !b.phone || !b.location) {
-    return res.status(400).send('Please fill all required fields.');
-  }
-
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: process.env.EMAIL_USER,
-    subject: 'New Vijay Generator Booking!',
-    text: `
-New Booking:
-
-Model: ${b.model}
-Date: ${b.date}
-Time: ${b.time}
-Name: ${b.name}
-Phone: ${b.phone}
-Email: ${b.email}
-Location: ${b.location}
-Quantity: ${b.qty}
-Message: ${b.message}
-`
-  };
-
+// ✅ API route for booking form
+app.post("/book", async (req, res) => {
   try {
-    let info = await transporter.sendMail(mailOptions);
-    console.log('Booking email sent:', info.response);
-    res.send('Booking submitted successfully! Check your email.');
-  } catch (err) {
-    console.error('Failed to send booking email:', err);
-    res.status(500).send('Booking received but failed to send email.');
+    const booking = req.body;
+    console.log("New Booking Received:", booking);
+
+    // Message for owner (you)
+    const ownerMessage = `
+New Generator Booking Received
+
+Model: ${booking.model}
+Date: ${booking.date}
+Time: ${booking.time}
+Name: ${booking.name}
+Phone: ${booking.phone}
+Email: ${booking.email}
+Location: ${booking.location}
+Quantity: ${booking.qty}
+Message: ${booking.message || "N/A"}
+
+— Vijay Generator Booking System
+    `;
+
+    // Send email to business owner
+    await resend.emails.send({
+      from: "Vijay Generator <onboarding@resend.dev>",
+      to: "your_email@gmail.com", // 🔹 change this to YOUR email
+      subject: "New Booking Received – Vijay Generator",
+      text: ownerMessage,
+    });
+
+    // Message for customer
+    const customerMessage = `
+Dear ${booking.name},
+
+Thank you for booking a generator with Vijay Generator!
+Here are your booking details:
+
+Model: ${booking.model}
+Date: ${booking.date}
+Time: ${booking.time}
+Location: ${booking.location}
+Quantity: ${booking.qty}
+
+Our team will contact you shortly for confirmation.
+
+Best regards,  
+Vijay Generator
+📞 Customer Support
+    `;
+
+    // Send confirmation email to the customer
+    await resend.emails.send({
+      from: "Vijay Generator <onboarding@resend.dev>",
+      to: booking.email,
+      subject: "Booking Confirmation – Vijay Generator",
+      text: customerMessage,
+    });
+
+    res.status(200).send("Booking confirmed and emails sent!");
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).send("Failed to process booking.");
   }
 });
 
+// ✅ Basic route for testing
+app.get("/", (req, res) => {
+  res.send("✅ Vijay Generator Booking Server is running!");
+});
+
+// ✅ Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
